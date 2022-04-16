@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include "string_st.h"
 
 const char *string_null_error = "String is null";
@@ -16,6 +18,56 @@ typedef struct string_t {
 } STRING_ST;
 
 /* Functions */
+STRING_ST* concat_str(int n, ...)
+{
+  va_list ap, aq;
+  va_start(ap, n);
+  va_copy(aq, ap);
+
+  size_t total_len = 0;
+  for (int i = 0; i < n; i++) {
+    STRING_ST *tmp = va_arg(ap, STRING_ST*);
+    if (tmp)
+      total_len += tmp->length;
+  }
+  va_end(ap);
+
+  STRING_ST *new_str;
+  new_str = new_empty_string_s(total_len);
+
+  for (int i = 0; i < n; i++) {
+    STRING_ST *tmp = va_arg(aq, STRING_ST*);
+    if (tmp && tmp->p)
+      append_str_literal(new_str, tmp->p);
+  }
+
+  va_end(aq);
+  return new_str;
+}
+
+STRING_ST* concat_str_test(int n, ...)
+{
+  va_list ap, aq;
+  va_start(ap, n);
+  va_copy(aq, ap);
+
+  size_t total_len = 0;
+  size_t total_len2 = 0;
+  for (int i = 0; i < n; i++) {
+    total_len += va_arg(ap, STRING_ST*)->length;
+  }
+
+  for (int i = 0; i < n; i++) {
+    total_len2 += va_arg(aq, STRING_ST*)->length;
+  }
+
+  printf("Total Length: %ld\n", total_len);
+  printf("Total Length 2: %ld\n", total_len2);
+  va_end(ap);
+  va_end(aq);
+  return NULL;
+}
+
 int append_char(STRING_ST *string, char ch)
 {
   if (!string)
@@ -25,6 +77,8 @@ int append_char(STRING_ST *string, char ch)
 
   size_t len = string->length;
   size_t mlen = string->memlength;
+
+  /* string is full */
   if (len == (mlen - 1)) {
     mlen += DEFAULT_MEMORY_LEN;
     char *ptr = calloc(mlen, sizeof(char));
@@ -48,14 +102,14 @@ int append_char(STRING_ST *string, char ch)
 size_t get_str_length(STRING_ST *string)
 {
   if (!string)
-    return 0;
+    return STRING_NULL;
   return string->length;
 }
 
 size_t get_str_memlength(STRING_ST *string)
 {
   if (!string)
-    return 0;
+    return STRING_NULL;
   return string->memlength;
 }
 
@@ -69,27 +123,77 @@ const char* get_str_literal(STRING_ST *string)
   return (string->p);
 }
 
-int fill_string(STRING_ST *string, const char *src)
+int append_str_literal(STRING_ST *string, const char *src)
 {
   if (!string)
-    return 1;
+    return STRING_NULL;
+  if (!string->p)
+    return STRING_CHAR_NULL;
 
+  size_t len = string->length;
   size_t mlen = string->memlength;
 
-  int n = 0;
-  while (src[n] != '\0' && n < mlen)
+  size_t n = 0;
+  while (src[n] != '\0' && n < DEFAULT_MEMORY_LEN)
     n++;
 
-  int i;
-  for (i = 0; i < n; i++) {
-    string->p[i] = src[i];
+  /* new string exceeds current memory */
+  if (n + len > mlen) {
+    mlen = n + len + 1;
+
+    char *ptr = calloc(mlen, sizeof(char));
+    if (!ptr)
+      return STRING_MEM_ALLOC;
+
+    memcpy(ptr, string->p, mlen);
+    free(string->p);
+    string->p = ptr;
   }
 
-  string->length = n;
-  string->p[i] = '\0';
+  size_t i;
+  for (i = 0; i < n + len; i++) {
+    string->p[i + len] = src[i];
+  }
 
-  return 0;
+
+  string->length = n + len;
+  string->p[i + len] = '\0';
+
+  return STRING_SUCCESS;
 }
+
+/* STRING_ST* concat_str(STRING_ST *x, STRING_ST *y) */
+/* { */
+/*   if (!x || !y || !x->p || !y->p) */
+/*     return NULL; */
+/* } */
+
+/* int append_str_literal(STRING_ST *string, const char *src) */
+/* { */
+/*   if (!string) */
+/*     return STRING_NULL; */
+/*   if (!string->p) */
+/*     return STRING_CHAR_NULL; */
+
+/*   size_t len = string->length; */
+/*   size_t mlen = string->memlength; */
+
+/*   size_t n = 0; */
+/*   while (src[n] != '\0' && (n + len) < mlen - 1) */
+/*     n++; */
+
+/*   size_t i; */
+/*   for (i = 0; i < n; i++) { */
+/*     string->p[i + len] = src[i]; */
+/*   } */
+
+/*   printf("n = %ld, i = %ld, len = %ld, mlen = %ld\n", n, i, len, mlen); */
+
+/*   string->length = n + len; */
+/*   string->p[i + len] = '\0'; */
+
+/*   return STRING_SUCCESS; */
+/* } */
 
 STRING_ST* new_empty_string_s(size_t sz)
 {
@@ -98,14 +202,14 @@ STRING_ST* new_empty_string_s(size_t sz)
   if (!string)
     return NULL;
 
-  string->p = calloc(sz, sizeof(sz));
+  string->p = calloc(sz + 1, sizeof(sz));
   if (!string->p) {
     free(string);
     return NULL;
   }
 
   string->length = 0;
-  string->memlength = sz;
+  string->memlength = sz + 1;
 
   return string;
 }
@@ -125,7 +229,7 @@ STRING_ST* new_string(const char *s, size_t sz)
   if (!string)
     return NULL;
 
-  fill_string(string, s);
+  append_str_literal(string, s);
 
   return string;
 }

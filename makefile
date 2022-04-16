@@ -2,8 +2,8 @@ CC       = gcc --std=gnu99
 SRC      = string_st.c 
 OBJ      = ${SRC:.c=.o}
 LIBS     = 
-CFLAGS   = -Wall 
-CDFLAGS  = -Wall -g 
+CFLAGS   = -Wall -g -ggdb
+CDFLAGS  = -Wall -g -ggdb
 LDFLAGS  = ${LIBS}
 TEST     = testString
 TESTDEB  = testStringDeb
