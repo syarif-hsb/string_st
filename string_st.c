@@ -28,7 +28,8 @@ typedef struct string_t {
 /* Function declaration */
 STRING_ST* new_empty_string();
 STRING_ST* new_empty_string_s(size_t sz);
-STRING_ST* new_string(const char *s, size_t sz);
+STRING_ST* new_string(const char *s);
+STRING_ST* new_string_s(const char *s, size_t sz);
 int del_string(struct string_t *str);
 
 int append_char(STRING_ST *str, char ch);
@@ -191,9 +192,20 @@ STRING_ST* new_empty_string()
   return str;
 }
 
-STRING_ST* new_string(const char *s, size_t str_len)
+STRING_ST* new_string_s(const char *s, size_t str_len)
 {
   STRING_ST *str = new_empty_string_s(str_len + 1);
+  if (!str)
+    return NULL;
+
+  append_str_literal(str, s);
+
+  return str;
+}
+
+STRING_ST* new_string(const char *s)
+{
+  STRING_ST *str = new_empty_string();
   if (!str)
     return NULL;
 

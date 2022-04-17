@@ -5,7 +5,8 @@ typedef struct string_t STRING_ST;
 
 STRING_ST* new_empty_string();
 STRING_ST* new_empty_string_s(size_t sz);
-STRING_ST* new_string(const char *s, size_t sz);
+STRING_ST* new_string(const char *s);
+STRING_ST* new_string_s(const char *s, size_t sz);
 int del_string(struct string_t *string);
 
 int append_char(STRING_ST *string, char ch);
