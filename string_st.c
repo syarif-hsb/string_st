@@ -11,6 +11,7 @@
 #define STRING_CHAR_NULL  (-3)
 #define STRING_MEM_ALLOC  (-4)
 
+/* Initialized Variables */
 const char *string_null_error = "String is null";
 const char *string_array_null_error = "String array is null";
 const char *string_char_null_error = "String char pointer is null";
@@ -25,23 +26,127 @@ typedef struct string_t {
   size_t mlen;
 } STRING_ST;
 
+typedef struct vector_t {
+  STRING_ST **strings;
+  size_t len;
+  size_t mlen;
+} VECTOR_ST;
+/* End of Struct declaration */
+
 /* Function declaration */
+VECTOR_ST* parse_delimited(STRING_ST *string, const char *del);
+VECTOR_ST* new_vector();
+VECTOR_ST* new_vector_s(size_t sz);
+VECTOR_ST* v_append_str(VECTOR_ST *dst, STRING_ST *src);
+VECTOR_ST* v_concat_vec(int n, ...);
+VECTOR_ST* v_copy(VECTOR_ST *src);
+
+int del_vector(VECTOR_ST *v);
+
 STRING_ST* new_empty_string();
 STRING_ST* new_empty_string_s(size_t sz);
 STRING_ST* new_string(const char *s);
 STRING_ST* new_string_s(const char *s, size_t sz);
-int del_string(struct string_t *str);
-
-int append_char(STRING_ST *str, char ch);
-int append_str_literal(STRING_ST *str, const char *src);
 STRING_ST* concat_str(int n, ...);
+STRING_ST* str_copy(STRING_ST *s);
+
+int del_string(STRING_ST *str);
+int append_char(STRING_ST *dst, char ch);
+int append_str_literal(STRING_ST *dst, const char *src);
 
 const char* get_str_literal(STRING_ST *str);
+const char* v_get_str(VECTOR_ST* v, size_t index);
 const char* get_str_error(int errnum);
 size_t get_str_length(STRING_ST *str);
 size_t get_str_memlength(STRING_ST *str);
+size_t get_v_length(VECTOR_ST *v);
+size_t get_v_memlength(VECTOR_ST *v);
+/* End of Function declaration */
 
 /* Functions */
+VECTOR_ST* v_concat_vec(int n, ...)
+{
+  va_list ap, aq;
+  va_start(ap, n);
+  va_copy(aq, ap);
+
+  size_t total_len = 0;
+  for(int i = 0; i < n; i++) {
+    VECTOR_ST *tmp = va_arg(ap, VECTOR_ST*);
+    if (!tmp)
+      continue;
+    total_len += tmp->len;
+  }
+  va_end(ap);
+
+  VECTOR_ST *v;
+  v = new_vector_s(total_len);
+  if (!v)
+    return NULL;
+
+  for (int i = 0; i < n; i++) {
+    VECTOR_ST *tmp = va_arg(aq, VECTOR_ST*);
+    /* TODO: Make a copy */
+    for (int j = 0; j < tmp->len; j++)
+      v_append_str(v, tmp->strings[j]);
+  }
+  va_end(aq);
+
+  return v;
+}
+
+VECTOR_ST* v_append_str(VECTOR_ST *dst, STRING_ST *src)
+{
+  size_t len = dst->len;
+  size_t mlen = dst->mlen;
+
+  len += 1;
+  if (len > mlen) {
+    STRING_ST **tmp = calloc(len + 1, sizeof(STRING_ST*));
+    if (!tmp)
+      return NULL;
+
+    memcpy(tmp, dst->strings, mlen * sizeof(STRING_ST*));
+    mlen = len;
+    free(dst->strings);
+    dst->strings = tmp;
+  }
+
+  dst->strings[len - 1] = str_copy(src);
+  dst->len = len;
+  dst->mlen = mlen;
+
+  return dst;
+}
+
+VECTOR_ST* new_vector()
+{
+  VECTOR_ST *v;
+  v = new_vector_s(DEFAULT_MEMORY_LEN);
+  if (!v)
+    return NULL;
+
+  return v;
+}
+
+VECTOR_ST* new_vector_s(size_t sz)
+{
+  VECTOR_ST *v;
+  v = calloc(1, sizeof(VECTOR_ST));
+  if (!v)
+    return NULL;
+  v->strings = calloc(sz, sizeof(STRING_ST*));
+  if (!v->strings) {
+    free(v);
+    return NULL;
+  }
+
+  v->len = 0;
+  v->mlen = sz;
+
+  return v;
+}
+
 STRING_ST* concat_str(int n, ...)
 {
   va_list ap, aq;
@@ -51,8 +156,9 @@ STRING_ST* concat_str(int n, ...)
   size_t total_len = 0;
   for (int i = 0; i < n; i++) {
     STRING_ST *tmp = va_arg(ap, STRING_ST*);
-    if (tmp)
-      total_len += tmp->len;
+    if (!tmp)
+      continue;
+    total_len += tmp->len;
   }
   va_end(ap);
 
@@ -69,6 +175,43 @@ STRING_ST* concat_str(int n, ...)
   return new_str;
 }
 
+STRING_ST* str_copy(STRING_ST *src)
+{
+  size_t len = src->len;
+  size_t mlen = src->mlen;
+
+  STRING_ST *dst;
+  dst = new_empty_string_s(mlen);
+  if (!dst)
+    return NULL;
+
+  memcpy(dst->p, src->p, mlen * sizeof(char));
+  dst->len = len;
+  dst->mlen = mlen;
+
+  return dst;
+}
+
+VECTOR_ST* v_copy(VECTOR_ST *src)
+{
+  size_t len = src->len;
+  size_t mlen = src->mlen;
+
+  VECTOR_ST *dst;
+  dst = new_vector_s(mlen);
+  if (!dst)
+    return NULL;
+
+  for (size_t i = 0; i < len; i++) {
+    dst->strings[i] = str_copy(src->strings[i]);
+  }
+
+  dst->len = len;
+  dst->mlen = mlen;
+
+  return dst;
+}
+
 int append_char(STRING_ST *dst, char ch)
 {
   if (!dst)
@@ -81,14 +224,14 @@ int append_char(STRING_ST *dst, char ch)
 
   /* string is full */
   if (len == (mlen - 1)) {
-    char *ptr = calloc(mlen + DEFAULT_MEMORY_LEN, sizeof(char));
-    if (!ptr)
+    char *tmp = calloc(mlen + DEFAULT_MEMORY_LEN, sizeof(char));
+    if (!tmp)
       return STRING_MEM_ALLOC;
 
-    memcpy(ptr, dst->p, mlen);
+    memcpy(tmp, dst->p, mlen * sizeof(char));
     mlen += DEFAULT_MEMORY_LEN;
     free(dst->p);
-    dst->p = ptr;
+    dst->p = tmp;
   }
 
   dst->p[len] = ch;
@@ -118,14 +261,14 @@ int append_str_literal(STRING_ST *dst, const char *src)
 
   /* new string exceeds current memory */
   if (len >= mlen) {
-    char *ptr = calloc(len + 1, sizeof(char));
-    if (!ptr)
+    char *tmp = calloc(len + 1, sizeof(char));
+    if (!tmp)
       return STRING_MEM_ALLOC;
 
-    memcpy(ptr, dst->p, mlen);
+    memcpy(tmp, dst->p, mlen * sizeof(char));
     mlen = len + 1;
     free(dst->p);
-    dst->p = ptr;
+    dst->p = tmp;
   }
 
   size_t i;
@@ -161,13 +304,38 @@ const char* get_str_literal(STRING_ST *str)
   if (!str->p)
     return string_char_null_error;
 
-  return (str->p);
+  return str->p;
+}
+
+const char* v_get_str(VECTOR_ST* v, size_t index)
+{
+  /* TODO: add guard */
+  if (!v)
+    return NULL;
+
+  return get_str_literal(v->strings[index]);
+}
+
+size_t get_v_length(VECTOR_ST *v)
+{
+  /* TODO: add guard */
+  if (!v)
+    return 0;
+  return v->len;
+}
+
+size_t get_v_memlength(VECTOR_ST *v)
+{
+  /* TODO: add guard */
+  if (!v)
+    return 0;
+  return v->mlen;
 }
 
 STRING_ST* new_empty_string_s(size_t sz)
 {
   STRING_ST *str;
-  str = malloc(sizeof(struct string_t));
+  str = calloc(1, sizeof(STRING_ST));
   if (!str)
     return NULL;
 
@@ -214,7 +382,19 @@ STRING_ST* new_string(const char *s)
   return str;
 }
 
-int del_string(struct string_t *str)
+int del_vector(VECTOR_ST *v)
+{
+  /* TODO: Add guard for null pointers */
+  for (int i = 0; i < v->len; i++)
+    del_string(v->strings[i]);
+
+  free(v->strings);
+  free(v);
+
+  return 0;
+}
+
+int del_string(STRING_ST *str)
 {
   if (!str->p)
     return STRING_CHAR_NULL;
