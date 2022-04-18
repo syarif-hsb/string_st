@@ -22,7 +22,7 @@ void test_parse_delimiter()
   printf("String: \"%s\"\n\n", s_get_str_l(s));
 
 
-  VECTOR_ST *v = parse_delimited_c(s, ';');
+  VECTOR_ST *v = parse_delimited_c(s, 'a');
 
   printf("  vector: len: %ld, mlen: %ld\n", v_get_len(v), v_get_mlen(v));
   for (int i = 0; i < v_get_len(v); i++) {

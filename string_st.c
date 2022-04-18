@@ -184,7 +184,11 @@ VECTOR_ST* parse_delimited_c(STRING_ST *s, char d)
     l[i] = c;
     i++;
   }
-  v_append(v, new_str(l));
+  if (append)
+    s_append_l(v_get_str(v, v_get_len(v) - 1), l);
+  else
+    v_append(v, new_str(l));
+
   free(l);
 
   return v;
