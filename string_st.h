@@ -20,10 +20,10 @@ STRING_ST* new_str(const char *s);
 STRING_ST* new_str_s(const char *s, size_t sz);
 STRING_ST* new_empty_str();
 STRING_ST* new_empty_str_s(size_t sz);
-STRING_ST* str_concat(int n, ...);
-STRING_ST* str_copy(STRING_ST *s);
 STRING_ST* s_append_c(STRING_ST *dst, char ch);
 STRING_ST* s_append_l(STRING_ST *dst, const char *src);
+STRING_ST* s_concat(int n, ...);
+STRING_ST* s_copy(STRING_ST *s);
 
 int del_str(STRING_ST *str);
 size_t get_str_len(STRING_ST *str);

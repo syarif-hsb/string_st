@@ -57,7 +57,7 @@ void test_concat()
   STRING_ST *str3 = new_empty_str();
   STRING_ST *str4 = new_str_s("Hello There", 10);
 
-  STRING_ST *result = str_concat(4, str1, str2, str3, str4);
+  STRING_ST *result = s_concat(4, str1, str2, str3, str4);
 
   printf("Concat result: %s\n", get_str_l(result));
   printf("Str Length: %ld, Str Memory Length: %ld\n", 

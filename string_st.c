@@ -41,8 +41,8 @@ STRING_ST* new_empty_str();
 STRING_ST* new_empty_str_s(size_t sz);
 STRING_ST* s_append_c(STRING_ST *dst, char ch);
 STRING_ST* s_append_l(STRING_ST *dst, const char *src);
-STRING_ST* str_concat(int n, ...);
-STRING_ST* str_copy(STRING_ST *s);
+STRING_ST* s_concat(int n, ...);
+STRING_ST* s_copy(STRING_ST *s);
 
 int del_str(STRING_ST *str);
 size_t get_str_len(STRING_ST *str);
@@ -96,7 +96,7 @@ VECTOR_ST* v_append(VECTOR_ST *dst, STRING_ST *src)
     dst->strs = tmp;
   }
 
-  dst->strs[len - 1] = str_copy(src);
+  dst->strs[len - 1] = s_copy(src);
   dst->len = len;
   dst->mlen = mlen;
 
@@ -144,7 +144,7 @@ VECTOR_ST* v_copy(VECTOR_ST *src)
     return NULL;
 
   for (size_t i = 0; i < len; i++) {
-    dst->strs[i] = str_copy(src->strs[i]);
+    dst->strs[i] = s_copy(src->strs[i]);
   }
 
   dst->len = len;
@@ -321,7 +321,7 @@ STRING_ST* s_append_l(STRING_ST *dst, const char *src)
   return dst;
 }
 
-STRING_ST* str_concat(int n, ...)
+STRING_ST* s_concat(int n, ...)
 {
   va_list ap, aq;
   va_start(ap, n);
@@ -349,7 +349,7 @@ STRING_ST* str_concat(int n, ...)
   return new_str;
 }
 
-STRING_ST* str_copy(STRING_ST *src)
+STRING_ST* s_copy(STRING_ST *src)
 {
   size_t len = src->len;
   size_t mlen = src->mlen;
