@@ -28,15 +28,18 @@ VECTOR_ST* new_vector_s(size_t sz);
 VECTOR_ST* v_append(VECTOR_ST *dst, STRING_ST *src);
 VECTOR_ST* v_concat(int n, ...);
 VECTOR_ST* v_copy(VECTOR_ST *src);
-VECTOR_ST* parse_delimited(STRING_ST *string, const char *del);
+VECTOR_ST* parse_delimited_c(STRING_ST *s, char d);
+VECTOR_ST* parse_delimited_l(STRING_ST *s, const char *d);
+
 
 int del_vector(VECTOR_ST *v);
-size_t get_v_len(VECTOR_ST *v);
-size_t get_v_mlen(VECTOR_ST *v);
+size_t v_get_len(VECTOR_ST *v);
+size_t v_get_mlen(VECTOR_ST *v);
 const char* v_get_str_l(VECTOR_ST* v, size_t index);
+STRING_ST* v_get_str(VECTOR_ST *v, size_t index);
 
-STRING_ST* new_str(const char *s);
-STRING_ST* new_str_s(const char *s, size_t sz);
+STRING_ST* new_str(const char *l);
+STRING_ST* new_str_s(const char *l, size_t sz);
 STRING_ST* new_empty_str();
 STRING_ST* new_empty_str_s(size_t sz);
 STRING_ST* s_append_c(STRING_ST *dst, char ch);
@@ -44,10 +47,10 @@ STRING_ST* s_append_l(STRING_ST *dst, const char *src);
 STRING_ST* s_concat(int n, ...);
 STRING_ST* s_copy(STRING_ST *s);
 
-int del_str(STRING_ST *str);
-size_t get_str_len(STRING_ST *str);
-size_t get_str_mlen(STRING_ST *str);
-const char* get_str_l(STRING_ST *str);
+int del_str(STRING_ST *s);
+size_t s_get_len(STRING_ST *s);
+size_t s_get_mlen(STRING_ST *s);
+const char* s_get_str_l(STRING_ST *s);
 /* End of Function declaration */
 
 /* Functions */
@@ -96,7 +99,7 @@ VECTOR_ST* v_append(VECTOR_ST *dst, STRING_ST *src)
     dst->strs = tmp;
   }
 
-  dst->strs[len - 1] = s_copy(src);
+  dst->strs[len - 1] = src;
   dst->len = len;
   dst->mlen = mlen;
 
@@ -126,7 +129,7 @@ VECTOR_ST* v_concat(int n, ...)
   for (int i = 0; i < n; i++) {
     VECTOR_ST *tmp = va_arg(aq, VECTOR_ST*);
     for (int j = 0; j < tmp->len; j++)
-      v_append(v, tmp->strs[j]);
+      v_append(v, s_copy(tmp->strs[j]));
   }
   va_end(aq);
 
@@ -153,6 +156,45 @@ VECTOR_ST* v_copy(VECTOR_ST *src)
   return dst;
 }
 
+VECTOR_ST* parse_delimited_c(STRING_ST *s, char d)
+{
+  VECTOR_ST *v;
+  v = new_vector();
+
+  char *sl = s->l;
+  char *l = calloc(DEFAULT_MEMORY_LEN, sizeof(char));
+
+  int i = 0;
+  int append = 0; /* Whether continue appending last str */
+  char c;
+  while (c = *sl++) {
+    if (c == d || i == DEFAULT_MEMORY_LEN - 1) {
+      if (append)
+        s_append_l(v_get_str(v, v_get_len(v) - 1), l);
+      else
+        v_append(v, new_str(l));
+      memset(l, '\0', DEFAULT_MEMORY_LEN);
+
+      append = !(i - (DEFAULT_MEMORY_LEN - 1));
+      i = 0;
+
+      continue;
+    }
+
+    l[i] = c;
+    i++;
+  }
+  v_append(v, new_str(l));
+  free(l);
+
+  return v;
+}
+
+VECTOR_ST* parse_delimited_l(STRING_ST *s, const char *d)
+{
+  return NULL;
+}
+
 int del_vector(VECTOR_ST *v)
 {
   if (!v)
@@ -172,7 +214,7 @@ int del_vector(VECTOR_ST *v)
   return STRING_SUCCESS;
 }
 
-size_t get_v_len(VECTOR_ST *v)
+size_t v_get_len(VECTOR_ST *v)
 {
   if (!v)
     return STRING_FAILURE;
@@ -180,7 +222,7 @@ size_t get_v_len(VECTOR_ST *v)
   return v->len;
 }
 
-size_t get_v_mlen(VECTOR_ST *v)
+size_t v_get_mlen(VECTOR_ST *v)
 {
   if (!v)
     return STRING_FAILURE;
@@ -197,7 +239,19 @@ const char* v_get_str_l(VECTOR_ST* v, size_t index)
   if (!v->strs[index])
     return NULL;
 
-  return get_str_l(v->strs[index]);
+  return s_get_str_l(v->strs[index]);
+}
+
+STRING_ST* v_get_str(VECTOR_ST *v, size_t index)
+{
+  if (!v)
+    return NULL;
+  if (!v->strs)
+    return NULL;
+  if (!v->strs[index])
+    return NULL;
+
+  return v->strs[index];
 }
 
 STRING_ST* new_str(const char *s)
@@ -379,21 +433,21 @@ int del_str(STRING_ST *str)
   return STRING_SUCCESS;
 }
 
-size_t get_str_len(STRING_ST *str)
+size_t s_get_len(STRING_ST *str)
 {
   if (!str)
     return STRING_FAILURE;
   return str->len;
 }
 
-size_t get_str_mlen(STRING_ST *str)
+size_t s_get_mlen(STRING_ST *str)
 {
   if (!str)
     return STRING_FAILURE;
   return str->mlen;
 }
 
-const char* get_str_l(STRING_ST *str)
+const char* s_get_str_l(STRING_ST *str)
 {
   if (!str)
     return NULL;
