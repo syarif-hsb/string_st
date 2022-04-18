@@ -7,41 +7,41 @@ void v_test_concat()
 {
   printf("\n====== TEST CONCAT VECTOR ======\n");
   VECTOR_ST *v1 = new_vector();
-  STRING_ST *str1 = new_string("Hai Mega");
-  STRING_ST *str2 = new_string("Hai Semua");
-  STRING_ST *str3 = new_string("Hello, World!");
-  v_append_str(v1, str1);
-  v_append_str(v1, str2);
-  v_append_str(v1, str3);
+  STRING_ST *str1 = new_str("Hai Mega");
+  STRING_ST *str2 = new_str("Hai Semua");
+  STRING_ST *str3 = new_str("Hello, World!");
+  v_append(v1, str1);
+  v_append(v1, str2);
+  v_append(v1, str3);
 
   const char *s;
-  for (int i = 0; i < get_v_length(v1); i++) {
-    s = v_get_str(v1, i);
+  for (int i = 0; i < get_v_len(v1); i++) {
+    s = v_get_str_l(v1, i);
     printf("String %d: %s\n", i, s);
   }
 
   VECTOR_ST *v2 = new_vector();
-  STRING_ST *str4 = new_string("Hai Kamu");
-  STRING_ST *str5 = new_string("Hai Ho");
-  STRING_ST *str6 = new_string("Hello, Space!");
-  v_append_str(v2, str4);
-  v_append_str(v2, str5);
-  v_append_str(v2, str6);
+  STRING_ST *str4 = new_str("Hai Kamu");
+  STRING_ST *str5 = new_str("Hai Ho");
+  STRING_ST *str6 = new_str("Hello, Space!");
+  v_append(v2, str4);
+  v_append(v2, str5);
+  v_append(v2, str6);
 
-  VECTOR_ST *v3 = v_concat_vec(2, v1, v2);
+  VECTOR_ST *v3 = v_concat(2, v1, v2);
   printf("\n");
 
-  for (int i = 0; i < get_v_length(v3); i++) {
-    s = v_get_str(v3, i);
+  for (int i = 0; i < get_v_len(v3); i++) {
+    s = v_get_str_l(v3, i);
     printf("String %d: %s\n", i, s);
   }
 
-  del_string(str1);
-  del_string(str2);
-  del_string(str3);
-  del_string(str4);
-  del_string(str5);
-  del_string(str6);
+  del_str(str1);
+  del_str(str2);
+  del_str(str3);
+  del_str(str4);
+  del_str(str5);
+  del_str(str6);
   del_vector(v1);
   del_vector(v2);
   del_vector(v3);
@@ -52,22 +52,22 @@ void test_concat()
 {
   printf("\n====== TEST CONCAT ======\n");
 
-  STRING_ST *str1 = new_string_s("Hello Sweetheart", 8);
-  STRING_ST *str2 = new_empty_string_s(256);
-  STRING_ST *str3 = new_empty_string();
-  STRING_ST *str4 = new_string_s("Hello There", 10);
+  STRING_ST *str1 = new_str_s("Hello Sweetheart", 8);
+  STRING_ST *str2 = new_empty_str_s(256);
+  STRING_ST *str3 = new_empty_str();
+  STRING_ST *str4 = new_str_s("Hello There", 10);
 
-  STRING_ST *result = concat_str(4, str1, str2, str3, str4);
+  STRING_ST *result = str_concat(4, str1, str2, str3, str4);
 
-  printf("Concat result: %s\n", get_str_literal(result));
+  printf("Concat result: %s\n", get_str_l(result));
   printf("Str Length: %ld, Str Memory Length: %ld\n", 
-      get_str_length(result), get_str_memlength(result));
+      get_str_len(result), get_str_mlen(result));
 
-  del_string(str1);
-  del_string(str2);
-  del_string(str3);
-  del_string(str4);
-  del_string(result);
+  del_str(str1);
+  del_str(str2);
+  del_str(str3);
+  del_str(str4);
+  del_str(result);
 
   printf("====== END CONCAT ======\n");
 }
@@ -76,18 +76,18 @@ void test_append_char()
 {
   printf("\n====== TEST APPEND CHAR ======\n");
 
-  STRING_ST *str = new_string_s("Hello Sweetheart", 20);
+  STRING_ST *str = new_str_s("Hello Sweetheart", 20);
 
-  printf("str: %s with length: %ld and memlength: %ld\n", get_str_literal(str), get_str_length(str), get_str_memlength(str));
+  printf("str: %s with length: %ld and memlength: %ld\n", get_str_l(str), get_str_len(str), get_str_mlen(str));
 
-  append_char(str, 'X');
-  append_char(str, 'Y');
-  append_char(str, 'Z');
-  append_char(str, '0');
+  s_append_c(str, 'X');
+  s_append_c(str, 'Y');
+  s_append_c(str, 'Z');
+  s_append_c(str, '0');
 
-  printf("str: %s with length: %ld and memlength: %ld\n", get_str_literal(str), get_str_length(str), get_str_memlength(str));
+  printf("str: %s with length: %ld and memlength: %ld\n", get_str_l(str), get_str_len(str), get_str_mlen(str));
 
-  del_string(str);
+  del_str(str);
 
   printf("====== END APPEND CHAR ======\n");
 }
@@ -96,11 +96,11 @@ void test_creation_wo_size()
 {
   printf("\n====== TEST CREATION WO SIZE ======\n");
 
-  STRING_ST *str = new_string("This is arbitrary string");
-  printf("Str: %s\n", get_str_literal(str));
+  STRING_ST *str = new_str("This is arbitrary string");
+  printf("Str: %s\n", get_str_l(str));
   printf("Str Length: %ld, Str Memory Length: %ld\n", 
-      get_str_length(str), get_str_memlength(str));
-  del_string(str);
+      get_str_len(str), get_str_mlen(str));
+  del_str(str);
 
   printf("====== END CREATION WO SIZE ======\n");
 }
@@ -110,12 +110,12 @@ void test_creation()
   printf("\n====== TEST CREATION ======\n");
 
   size_t sz = 5;
-  STRING_ST *str = new_string_s("Big enough string", sz);
+  STRING_ST *str = new_str_s("Big enough string", sz);
   printf("Big string with small number of size\n");
-  printf("Str: %s, size: %ld\n", get_str_literal(str), sz);
+  printf("Str: %s, size: %ld\n", get_str_l(str), sz);
   printf("Str Length: %ld, Str Memory Length: %ld\n", 
-      get_str_length(str), get_str_memlength(str));
-  del_string(str);
+      get_str_len(str), get_str_mlen(str));
+  del_str(str);
 
   printf("====== END CREATION ======\n");
 }
@@ -132,11 +132,11 @@ void test_non_terminated_creation()
   /* s[13] = 'A'; */
 
   size_t sz = 12;
-  STRING_ST *str = new_string_s(s, sz);
-  printf("Str: %s, size: %ld\n", get_str_literal(str), sz);
+  STRING_ST *str = new_str_s(s, sz);
+  printf("Str: %s, size: %ld\n", get_str_l(str), sz);
   printf("Str Length: %ld, Str Memory Length: %ld\n", 
-      get_str_length(str), get_str_memlength(str));
-  del_string(str);
+      get_str_len(str), get_str_mlen(str));
+  del_str(str);
   free(s);
 
   printf("====== END NON-TERMINATED CREATION ======\n");
