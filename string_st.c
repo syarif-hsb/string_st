@@ -6,7 +6,7 @@
 /* Macros */
 #define DEFAULT_MEMORY_LEN 256
 #define STRING_SUCCESS       0
-#define STRING_FAILURE      -1
+#define STRING_FAILURE     (-1)
 
 /* Struct declaration */
 typedef struct string_t {
@@ -16,21 +16,40 @@ typedef struct string_t {
 } STRING_ST;
 
 typedef struct vector_t {
- STRING_ST **strs;
+  STRING_ST **strs;
   size_t len;
   size_t mlen;
 } VECTOR_ST;
+
+typedef struct table_t {
+  VECTOR_ST **vs;
+  size_t len;
+  size_t mlen;
+} TABLE_ST;
 /* End of Struct declaration */
 
 /* Function declaration */
+TABLE_ST*  new_table();
+TABLE_ST*  new_table_s(size_t sz);
+TABLE_ST*  t_append(TABLE_ST *dst, VECTOR_ST *src);
+TABLE_ST*  t_concat(int n, ...);
+TABLE_ST*  t_copy(TABLE_ST *src);
+TABLE_ST*  parse_delimited_f(FILE *s, char d); /* Not Yet implemented */
+
+int del_table(TABLE_ST *t);
+size_t t_get_len(TABLE_ST *t);
+size_t t_get_mlen(TABLE_ST *t);
+const char* t_get_str_l(TABLE_ST *t, size_t i, size_t j);
+STRING_ST* t_get_str(TABLE_ST *t, size_t i, size_t j);
+VECTOR_ST* t_get_vector(TABLE_ST *t, size_t index);
+
 VECTOR_ST* new_vector();
 VECTOR_ST* new_vector_s(size_t sz);
 VECTOR_ST* v_append(VECTOR_ST *dst, STRING_ST *src);
 VECTOR_ST* v_concat(int n, ...);
 VECTOR_ST* v_copy(VECTOR_ST *src);
 VECTOR_ST* parse_delimited_c(STRING_ST *s, char d);
-VECTOR_ST* parse_delimited_l(STRING_ST *s, const char *d);
-
+VECTOR_ST* parse_delimited_l(STRING_ST *s, const char *d); /* Not Yet implemented */
 
 int del_vector(VECTOR_ST *v);
 size_t v_get_len(VECTOR_ST *v);
@@ -54,6 +73,185 @@ const char* s_get_str_l(STRING_ST *s);
 /* End of Function declaration */
 
 /* Functions */
+TABLE_ST* new_table()
+{
+  TABLE_ST* t;
+  t = new_table_s(DEFAULT_MEMORY_LEN);
+  if (!t)
+    return NULL;
+
+  return t;
+}
+
+TABLE_ST* new_table_s(size_t sz)
+{
+  TABLE_ST *t;
+  t = calloc(1, sizeof(VECTOR_ST));
+  if (!t)
+    return NULL;
+  t->vs = calloc(sz, sizeof(VECTOR_ST*));
+  if (!t->vs) {
+    free(t);
+    return NULL;
+  }
+
+  t->len = 0;
+  t->mlen = sz;
+
+  return t;
+}
+
+TABLE_ST* t_append(TABLE_ST *dst, VECTOR_ST *src)
+{
+  size_t len = dst->len;
+  size_t mlen = dst->mlen;
+
+  len += 1;
+  if (len > mlen) {
+    VECTOR_ST **tmp = calloc(len + 1, sizeof(VECTOR_ST*));
+    if (!tmp)
+      return NULL;
+
+    memcpy(tmp, dst->vs, mlen * sizeof(VECTOR_ST*));
+    mlen = len;
+    free(dst->vs);
+    dst->vs = tmp;
+  }
+
+  dst->vs[len - 1] = src;
+  dst->len = len;
+  dst->mlen = mlen;
+
+  return dst;
+}
+
+TABLE_ST* t_concat(int n, ...)
+{
+  va_list ap, aq;
+  va_start(ap, n);
+  va_copy(aq, ap);
+
+  size_t total_len = 0;
+  for(int i = 0; i < n; i++) {
+    TABLE_ST *tmp = va_arg(ap, TABLE_ST*);
+    if (!tmp)
+      continue;
+    total_len += tmp->len;
+  }
+  va_end(ap);
+
+  TABLE_ST *t;
+  t = new_table_s(total_len);
+  if (!t)
+    return NULL;
+
+  for (int i = 0; i < n; i++) {
+    TABLE_ST *tmp = va_arg(aq, TABLE_ST*);
+    for (int j = 0; j < tmp->len; j++)
+      t_append(t, v_copy(tmp->vs[j]));
+  }
+  va_end(aq);
+
+  return t;
+}
+
+TABLE_ST* t_copy(TABLE_ST *src)
+{
+  size_t len = src->len;
+  size_t mlen = src->mlen;
+
+  TABLE_ST *dst;
+  dst = new_table_s(mlen);
+  if (!dst)
+    return NULL;
+
+  for (size_t i = 0; i < len; i++) {
+    dst->vs[i] = v_copy(src->vs[i]);
+  }
+
+  dst->len = len;
+  dst->mlen = mlen;
+
+  return dst;
+}
+
+int del_table(TABLE_ST *t)
+{
+  if (!t)
+    return STRING_FAILURE;
+  if (!t->vs)
+    return STRING_FAILURE;
+
+  for (int i = 0; i < t->len; i++) {
+    if (!t->vs[i])
+      continue;
+    del_vector(t->vs[i]);
+  }
+
+  free(t->vs);
+  free(t);
+
+  return STRING_SUCCESS;
+}
+
+size_t t_get_len(TABLE_ST *t)
+{
+  if (!t)
+    return STRING_FAILURE;
+
+  return t->len;
+}
+
+size_t t_get_mlen(TABLE_ST *t)
+{
+  if (!t)
+    return STRING_FAILURE;
+
+  return t->mlen;
+}
+
+STRING_ST* t_get_str(TABLE_ST *t, size_t i, size_t j)
+{
+  if (!t)
+    return NULL;
+  if (!t->vs)
+    return NULL;
+  if (!t->vs[i])
+    return NULL;
+  if (!t->vs[i]->strs)
+    return NULL;
+  if (!t->vs[i]->strs[j])
+    return NULL;
+
+  return t->vs[i]->strs[j];
+}
+
+VECTOR_ST* t_get_vector(TABLE_ST *t, size_t index)
+{
+  if (!t)
+    return NULL;
+  if (!t->vs)
+    return NULL;
+
+  return t->vs[index];
+}
+
+const char* t_get_str_l(TABLE_ST* t, size_t i, size_t j)
+{
+  if (!t)
+    return NULL;
+  if (!t->vs)
+    return NULL;
+  if (!t->vs[i])
+    return NULL;
+  if (!t->vs[i]->strs)
+    return NULL;
+  if (!t->vs[i]->strs[j])
+    return NULL;
+
+  return v_get_str_l(t->vs[i], j);
+}
+
 VECTOR_ST* new_vector()
 {
   VECTOR_ST *v;
@@ -167,7 +365,7 @@ VECTOR_ST* parse_delimited_c(STRING_ST *s, char d)
   int i = 0;
   int append = 0; /* Whether continue appending last str */
   char c;
-  while (c = *sl++) {
+  while ((c = *sl++)) {
     if (c == d || i == DEFAULT_MEMORY_LEN - 1) {
       if (append)
         s_append_l(v_get_str(v, v_get_len(v) - 1), l);
@@ -234,18 +432,6 @@ size_t v_get_mlen(VECTOR_ST *v)
   return v->mlen;
 }
 
-const char* v_get_str_l(VECTOR_ST* v, size_t index)
-{
-  if (!v)
-    return NULL;
-  if (!v->strs)
-    return NULL;
-  if (!v->strs[index])
-    return NULL;
-
-  return s_get_str_l(v->strs[index]);
-}
-
 STRING_ST* v_get_str(VECTOR_ST *v, size_t index)
 {
   if (!v)
@@ -256,6 +442,18 @@ STRING_ST* v_get_str(VECTOR_ST *v, size_t index)
     return NULL;
 
   return v->strs[index];
+}
+
+const char* v_get_str_l(VECTOR_ST* v, size_t index)
+{
+  if (!v)
+    return NULL;
+  if (!v->strs)
+    return NULL;
+  if (!v->strs[index])
+    return NULL;
+
+  return s_get_str_l(v->strs[index]);
 }
 
 STRING_ST* new_str(const char *s)
@@ -460,5 +658,4 @@ const char* s_get_str_l(STRING_ST *str)
 
   return str->l;
 }
-
 

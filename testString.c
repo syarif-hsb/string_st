@@ -3,6 +3,59 @@
 #include <stdlib.h>
 #include "string_st.h"
 
+void test_table()
+{
+  printf("\n====== TEST TABLE ======\n");
+  VECTOR_ST *v1 = new_vector();
+  STRING_ST *str1 = new_str("Hai Mega");
+  STRING_ST *str2 = new_str("Hai Semua");
+  STRING_ST *str3 = new_str("Hello, World!");
+  v_append(v1, s_copy(str1));
+  v_append(v1, s_copy(str2));
+  v_append(v1, s_copy(str3));
+
+  const char *s;
+  for (int i = 0; i < v_get_len(v1); i++) {
+    s = v_get_str_l(v1, i);
+    printf("String %d: %s\n", i, s);
+  }
+
+  VECTOR_ST *v2 = new_vector();
+  STRING_ST *str4 = new_str("Hai Kamu");
+  STRING_ST *str5 = new_str("Hai Ho");
+  STRING_ST *str6 = new_str("Hello, Space!");
+  v_append(v2, s_copy(str4));
+  v_append(v2, s_copy(str5));
+  v_append(v2, s_copy(str6));
+
+  VECTOR_ST *v3 = v_concat(2, v1, v2);
+  printf("\n");
+
+  for (int i = 0; i < v_get_len(v3); i++) {
+    s = v_get_str_l(v3, i);
+    printf("String %d: %s\n", i, s);
+  }
+
+  TABLE_ST *t = new_table();
+  t = t_append(t, v_copy(v1));
+  t = t_append(t, v_copy(v2));
+  t = t_append(t, v_copy(v3));
+
+  printf("String: %s\n", t_get_str_l(t, 1, 2));
+
+  del_str(str1);
+  del_str(str2);
+  del_str(str3);
+  del_str(str4);
+  del_str(str5);
+  del_str(str6);
+  del_vector(v1);
+  del_vector(v2);
+  del_vector(v3);
+  del_table(t);
+  printf("====== END TEST TABLE ======\n");
+}
+
 void test_copy()
 {
   printf("\n====== TEST COPY ======\n");
@@ -22,7 +75,7 @@ void test_parse_delimiter()
   printf("String: \"%s\"\n\n", s_get_str_l(s));
 
 
-  VECTOR_ST *v = parse_delimited_c(s, 'a');
+  VECTOR_ST *v = parse_delimited_c(s, ';');
 
   printf("  vector: len: %ld, mlen: %ld\n", v_get_len(v), v_get_mlen(v));
   for (int i = 0; i < v_get_len(v); i++) {
@@ -185,6 +238,7 @@ int main(int argc, char *argv[])
   test_v_concat();
   test_copy();
   test_parse_delimiter();
+  test_table();
 
   return 0;
 }

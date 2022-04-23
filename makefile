@@ -21,6 +21,9 @@ ${TEST}: ${OBJ} ${TESTOBJ}
 test: ${TEST}
 	./${TEST}
 
+static: ${OBJ}
+	ar rcs string_st.a ${OBJ}
+
 clean:
 	rm -f ${TEST} ${OBJ} ${TESTOBJ}
 
