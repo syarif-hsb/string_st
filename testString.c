@@ -42,6 +42,7 @@ void test_transpose()
   printf("Vector 1: %s,%s,%s,%s\n", t_get_str_l(t, 0, 0), t_get_str_l(t, 0, 1), t_get_str_l(t, 0, 2), t_get_str_l(t, 0, 3));
   printf("Vector 2: %s,%s,%s\n", t_get_str_l(t, 1, 0), t_get_str_l(t, 1, 1), t_get_str_l(t, 1, 2));
   printf("Vector 3: %s,%s,%s\n", t_get_str_l(t, 2, 0), t_get_str_l(t, 2, 1), t_get_str_l(t, 2, 2));
+  printf("Max Vector: %ld\n", t_get_max_vector_len(t));
 
   t = transpose(t);
   printf("After\n");
@@ -49,6 +50,7 @@ void test_transpose()
   printf("Vector 2: %s,%s,%s\n", t_get_str_l(t, 1, 0), t_get_str_l(t, 1, 1), t_get_str_l(t, 1, 2));
   printf("Vector 3: %s,%s,%s\n", t_get_str_l(t, 2, 0), t_get_str_l(t, 2, 1), t_get_str_l(t, 2, 2));
   printf("Vector 4: %s\n", t_get_str_l(t, 3, 0));
+  printf("Max Vector: %ld\n", t_get_max_vector_len(t));
 
   del_table(t);
   printf("====== END TEST TRANSPOSE ======\n");

@@ -40,6 +40,7 @@ TABLE_ST*  transpose(TABLE_ST *t);
 int del_table(TABLE_ST *t);
 size_t t_get_len(TABLE_ST *t);
 size_t t_get_mlen(TABLE_ST *t);
+size_t t_get_max_vector_len(TABLE_ST *t);
 const char* t_get_str_l(TABLE_ST *t, size_t i, size_t j);
 STRING_ST* t_get_str(TABLE_ST *t, size_t i, size_t j);
 VECTOR_ST* t_get_vector(TABLE_ST *t, size_t index);
@@ -242,6 +243,16 @@ size_t t_get_mlen(TABLE_ST *t)
     return STRING_FAILURE;
 
   return t->mlen;
+}
+
+size_t t_get_max_vector_len(TABLE_ST *t)
+{
+  size_t max_length = 0;
+  
+  for (size_t i = 0; i < t->len; i++)
+    max_length = max_length > t->vs[i]->len ? max_length : t->vs[i]->len;
+
+  return max_length;
 }
 
 STRING_ST* t_get_str(TABLE_ST *t, size_t i, size_t j)
