@@ -3,6 +3,57 @@
 #include <stdlib.h>
 #include "string_st.h"
 
+void test_transpose()
+{
+  printf("\n====== TEST TRANSPOSE ======\n");
+  TABLE_ST *t = new_table();
+
+  VECTOR_ST *v1 = new_vector();
+  STRING_ST *s1 = new_str("a");
+  STRING_ST *s2 = new_str("b");
+  STRING_ST *s3 = new_str("c");
+  STRING_ST *s4 = new_str("c2");
+  v_append(v1, s1);
+  v_append(v1, s2);
+  v_append(v1, s3);
+  v_append(v1, s4);
+
+  VECTOR_ST *v2 = new_vector();
+  s1 = new_str("d");
+  s2 = new_str("e");
+  s3 = new_str("f");
+  v_append(v2, s1);
+  v_append(v2, s2);
+  v_append(v2, s3);
+
+  VECTOR_ST *v3 = new_vector();
+  s1 = new_str("g");
+  s2 = new_str("h");
+  s3 = new_str("i");
+  v_append(v3, s1);
+  v_append(v3, s2);
+  v_append(v3, s3);
+
+  t_append(t, v1);
+  t_append(t, v2);
+  t_append(t, v3);
+
+  printf("Before\n");
+  printf("Vector 1: %s,%s,%s,%s\n", t_get_str_l(t, 0, 0), t_get_str_l(t, 0, 1), t_get_str_l(t, 0, 2), t_get_str_l(t, 0, 3));
+  printf("Vector 2: %s,%s,%s\n", t_get_str_l(t, 1, 0), t_get_str_l(t, 1, 1), t_get_str_l(t, 1, 2));
+  printf("Vector 3: %s,%s,%s\n", t_get_str_l(t, 2, 0), t_get_str_l(t, 2, 1), t_get_str_l(t, 2, 2));
+
+  t = transpose(t);
+  printf("After\n");
+  printf("Vector 1: %s,%s,%s,%s\n", t_get_str_l(t, 0, 0), t_get_str_l(t, 0, 1), t_get_str_l(t, 0, 2), t_get_str_l(t, 0, 3));
+  printf("Vector 2: %s,%s,%s\n", t_get_str_l(t, 1, 0), t_get_str_l(t, 1, 1), t_get_str_l(t, 1, 2));
+  printf("Vector 3: %s,%s,%s\n", t_get_str_l(t, 2, 0), t_get_str_l(t, 2, 1), t_get_str_l(t, 2, 2));
+  printf("Vector 4: %s\n", t_get_str_l(t, 3, 0));
+
+  del_table(t);
+  printf("====== END TEST TRANSPOSE ======\n");
+}
+
 void test_table()
 {
   printf("\n====== TEST TABLE ======\n");
@@ -239,6 +290,7 @@ int main(int argc, char *argv[])
   test_copy();
   test_parse_delimiter();
   test_table();
+  test_transpose();
 
   return 0;
 }
