@@ -2,6 +2,9 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <ctype.h>
 
 /* Macros */
 #define DEFAULT_MEMORY_LEN 256
@@ -9,28 +12,41 @@
 #define STRING_FAILURE     (-1)
 
 /* Struct declaration */
+typedef struct string_t STRING_ST;
+typedef struct vector_t VECTOR_ST;
+typedef struct table_t  TABLE_ST;
+
+struct kmp_t {
+  uint32_t match_n;
+  uint32_t token;
+  uint32_t method; /* 1: Ignore case 0: No Ignore case */
+  uint32_t *match_arry;
+};
+
 typedef struct string_t {
+  uint32_t len;
+  uint32_t mlen;
+  STRING_ST* cmp;
+  struct kmp_t *kmp;
   char *l;
-  size_t len;
-  size_t mlen;
 } STRING_ST;
 
 typedef struct vector_t {
   STRING_ST **strs;
-  size_t len;
-  size_t mlen;
+  uint32_t len;
+  uint32_t mlen;
 } VECTOR_ST;
 
 typedef struct table_t {
   VECTOR_ST **vs;
-  size_t len;
-  size_t mlen;
+  uint32_t len;
+  uint32_t mlen;
 } TABLE_ST;
 /* End of Struct declaration */
 
 /* Function declaration */
 TABLE_ST*  new_table();
-TABLE_ST*  new_table_s(size_t sz);
+TABLE_ST*  new_table_s(uint32_t sz);
 TABLE_ST*  t_append(TABLE_ST *dst, VECTOR_ST *src);
 TABLE_ST*  t_concat(int n, ...);
 TABLE_ST*  t_copy(TABLE_ST *src);
@@ -38,15 +54,15 @@ TABLE_ST*  parse_delimited_f(FILE *s, char d); /* Not Yet implemented */
 TABLE_ST*  transpose(TABLE_ST *t);
 
 int del_table(TABLE_ST *t);
-size_t t_get_len(TABLE_ST *t);
-size_t t_get_mlen(TABLE_ST *t);
-size_t t_get_max_vector_len(TABLE_ST *t);
-const char* t_get_str_l(TABLE_ST *t, size_t i, size_t j);
-STRING_ST* t_get_str(TABLE_ST *t, size_t i, size_t j);
-VECTOR_ST* t_get_vector(TABLE_ST *t, size_t index);
+uint32_t t_get_len(TABLE_ST *t);
+uint32_t t_get_mlen(TABLE_ST *t);
+uint32_t t_get_max_vector_len(TABLE_ST *t);
+const char* t_get_str_l(TABLE_ST *t, uint32_t i, uint32_t j);
+STRING_ST* t_get_str(TABLE_ST *t, uint32_t i, uint32_t j);
+VECTOR_ST* t_get_vector(TABLE_ST *t, uint32_t index);
 
 VECTOR_ST* new_vector();
-VECTOR_ST* new_vector_s(size_t sz);
+VECTOR_ST* new_vector_s(uint32_t sz);
 VECTOR_ST* v_append(VECTOR_ST *dst, STRING_ST *src);
 VECTOR_ST* v_concat(int n, ...);
 VECTOR_ST* v_copy(VECTOR_ST *src);
@@ -54,29 +70,36 @@ VECTOR_ST* parse_delimited_c(STRING_ST *s, char d);
 VECTOR_ST* parse_delimited_l(STRING_ST *s, const char *d); /* Not Yet implemented */
 
 int del_vector(VECTOR_ST *v);
-size_t v_get_len(VECTOR_ST *v);
-size_t v_get_mlen(VECTOR_ST *v);
-const char* v_get_str_l(VECTOR_ST* v, size_t index);
-STRING_ST* v_get_str(VECTOR_ST *v, size_t index);
+uint32_t v_get_len(VECTOR_ST *v);
+uint32_t v_get_mlen(VECTOR_ST *v);
+const char* v_get_str_l(VECTOR_ST* v, uint32_t index);
+STRING_ST* v_get_str(VECTOR_ST *v, uint32_t index);
 
 STRING_ST* new_str(const char *l);
-STRING_ST* new_str_s(const char *l, size_t sz);
+STRING_ST* new_str_s(const char *l, uint32_t sz);
 STRING_ST* new_empty_str();
-STRING_ST* new_empty_str_s(size_t sz);
+STRING_ST* new_empty_str_s(uint32_t sz);
 STRING_ST* s_append_c(STRING_ST *dst, char ch);
 STRING_ST* s_append_l(STRING_ST *dst, const char *src);
 STRING_ST* s_concat(int n, ...);
 STRING_ST* s_copy(STRING_ST *s);
+uint32_t get_case_match(STRING_ST* s, STRING_ST* cmp);
+uint32_t get_icase_match(STRING_ST* s, STRING_ST* cmp);
 
 int del_str(STRING_ST *s);
-size_t s_get_len(STRING_ST *s);
-size_t s_get_mlen(STRING_ST *s);
+uint32_t s_get_len(STRING_ST *s);
+uint32_t s_get_mlen(STRING_ST *s);
 const char* s_get_str_l(STRING_ST *s);
+/* End of Function declaration */
+
+/* Static Function declaration */
+static uint32_t get_match(STRING_ST* s, STRING_ST* cmp, bool ignorecase);
+static struct kmp_t* kmp_search(STRING_ST* a, STRING_ST* b, bool ignorecase);
 
 static TABLE_ST*  check_table(TABLE_ST* t);
 static VECTOR_ST* check_vector(VECTOR_ST* v); /* Not Yet implemented */
 static STRING_ST* check_string(STRING_ST* s); /* Not Yet implemented */
-/* End of Function declaration */
+/* End of Static Function declaration */
 
 /* Functions */
 TABLE_ST* new_table()
@@ -89,7 +112,7 @@ TABLE_ST* new_table()
   return t;
 }
 
-TABLE_ST* new_table_s(size_t sz)
+TABLE_ST* new_table_s(uint32_t sz)
 {
   TABLE_ST *t;
   t = calloc(1, sizeof(VECTOR_ST));
@@ -109,8 +132,8 @@ TABLE_ST* new_table_s(size_t sz)
 
 TABLE_ST* t_append(TABLE_ST *dst, VECTOR_ST *src)
 {
-  size_t len = dst->len;
-  size_t mlen = dst->mlen;
+  uint32_t len = dst->len;
+  uint32_t mlen = dst->mlen;
 
   len += 1;
   if (len > mlen) {
@@ -137,7 +160,7 @@ TABLE_ST* t_concat(int n, ...)
   va_start(ap, n);
   va_copy(aq, ap);
 
-  size_t total_len = 0;
+  uint32_t total_len = 0;
   for(int i = 0; i < n; i++) {
     TABLE_ST *tmp = va_arg(ap, TABLE_ST*);
     if (!tmp)
@@ -163,15 +186,15 @@ TABLE_ST* t_concat(int n, ...)
 
 TABLE_ST* t_copy(TABLE_ST *src)
 {
-  size_t len = src->len;
-  size_t mlen = src->mlen;
+  uint32_t len = src->len;
+  uint32_t mlen = src->mlen;
 
   TABLE_ST *dst;
   dst = new_table_s(mlen);
   if (!dst)
     return NULL;
 
-  for (size_t i = 0; i < len; i++) {
+  for (uint32_t i = 0; i < len; i++) {
     dst->vs[i] = v_copy(src->vs[i]);
   }
 
@@ -186,21 +209,21 @@ TABLE_ST* transpose(TABLE_ST *src)
   if (check_table(src) == NULL)
     return NULL;
 
-  size_t len = src->len;
-  size_t max_length = 0;
+  uint32_t len = src->len;
+  uint32_t max_length = 0;
 
-  for (size_t i = 0; i < len; i++) {
+  for (uint32_t i = 0; i < len; i++) {
     max_length = max_length > src->vs[i]->len ? max_length : src->vs[i]->len;
   }
 
   TABLE_ST *dst = new_table(max_length);
 
-  for (size_t i = 0; i < max_length; i++) {
+  for (uint32_t i = 0; i < max_length; i++) {
     t_append(dst, new_vector());
   }
 
-  for (size_t i = 0; i < len; i++) {
-    for (size_t j = 0; j < max_length && j < src->vs[i]->len; j++) {
+  for (uint32_t i = 0; i < len; i++) {
+    for (uint32_t j = 0; j < max_length && j < src->vs[i]->len; j++) {
       if (src->vs[i]->strs[j] == NULL)
         continue;
       v_append(dst->vs[j], s_copy(src->vs[i]->strs[j]));
@@ -229,7 +252,7 @@ int del_table(TABLE_ST *t)
   return STRING_SUCCESS;
 }
 
-size_t t_get_len(TABLE_ST *t)
+uint32_t t_get_len(TABLE_ST *t)
 {
   if (!t)
     return STRING_FAILURE;
@@ -237,7 +260,7 @@ size_t t_get_len(TABLE_ST *t)
   return t->len;
 }
 
-size_t t_get_mlen(TABLE_ST *t)
+uint32_t t_get_mlen(TABLE_ST *t)
 {
   if (!t)
     return STRING_FAILURE;
@@ -245,17 +268,17 @@ size_t t_get_mlen(TABLE_ST *t)
   return t->mlen;
 }
 
-size_t t_get_max_vector_len(TABLE_ST *t)
+uint32_t t_get_max_vector_len(TABLE_ST *t)
 {
-  size_t max_length = 0;
-  
-  for (size_t i = 0; i < t->len; i++)
+  uint32_t max_length = 0;
+
+  for (uint32_t i = 0; i < t->len; i++)
     max_length = max_length > t->vs[i]->len ? max_length : t->vs[i]->len;
 
   return max_length;
 }
 
-STRING_ST* t_get_str(TABLE_ST *t, size_t i, size_t j)
+STRING_ST* t_get_str(TABLE_ST *t, uint32_t i, uint32_t j)
 {
   if (!t)
     return NULL;
@@ -271,7 +294,7 @@ STRING_ST* t_get_str(TABLE_ST *t, size_t i, size_t j)
   return t->vs[i]->strs[j];
 }
 
-VECTOR_ST* t_get_vector(TABLE_ST *t, size_t index)
+VECTOR_ST* t_get_vector(TABLE_ST *t, uint32_t index)
 {
   if (!t)
     return NULL;
@@ -281,7 +304,7 @@ VECTOR_ST* t_get_vector(TABLE_ST *t, size_t index)
   return t->vs[index];
 }
 
-const char* t_get_str_l(TABLE_ST* t, size_t i, size_t j)
+const char* t_get_str_l(TABLE_ST* t, uint32_t i, uint32_t j)
 {
   if (!t)
     return NULL;
@@ -307,7 +330,7 @@ VECTOR_ST* new_vector()
   return v;
 }
 
-VECTOR_ST* new_vector_s(size_t sz)
+VECTOR_ST* new_vector_s(uint32_t sz)
 {
   VECTOR_ST *v;
   v = calloc(1, sizeof(VECTOR_ST));
@@ -327,8 +350,8 @@ VECTOR_ST* new_vector_s(size_t sz)
 
 VECTOR_ST* v_append(VECTOR_ST *dst, STRING_ST *src)
 {
-  size_t len = dst->len;
-  size_t mlen = dst->mlen;
+  uint32_t len = dst->len;
+  uint32_t mlen = dst->mlen;
 
   len += 1;
   if (len > mlen) {
@@ -355,7 +378,7 @@ VECTOR_ST* v_concat(int n, ...)
   va_start(ap, n);
   va_copy(aq, ap);
 
-  size_t total_len = 0;
+  uint32_t total_len = 0;
   for(int i = 0; i < n; i++) {
     VECTOR_ST *tmp = va_arg(ap, VECTOR_ST*);
     if (!tmp)
@@ -381,15 +404,15 @@ VECTOR_ST* v_concat(int n, ...)
 
 VECTOR_ST* v_copy(VECTOR_ST *src)
 {
-  size_t len = src->len;
-  size_t mlen = src->mlen;
+  uint32_t len = src->len;
+  uint32_t mlen = src->mlen;
 
   VECTOR_ST *dst;
   dst = new_vector_s(mlen);
   if (!dst)
     return NULL;
 
-  for (size_t i = 0; i < len; i++) {
+  for (uint32_t i = 0; i < len; i++) {
     dst->strs[i] = s_copy(src->strs[i]);
   }
 
@@ -461,7 +484,7 @@ int del_vector(VECTOR_ST *v)
   return STRING_SUCCESS;
 }
 
-size_t v_get_len(VECTOR_ST *v)
+uint32_t v_get_len(VECTOR_ST *v)
 {
   if (!v)
     return STRING_FAILURE;
@@ -469,7 +492,7 @@ size_t v_get_len(VECTOR_ST *v)
   return v->len;
 }
 
-size_t v_get_mlen(VECTOR_ST *v)
+uint32_t v_get_mlen(VECTOR_ST *v)
 {
   if (!v)
     return STRING_FAILURE;
@@ -477,7 +500,7 @@ size_t v_get_mlen(VECTOR_ST *v)
   return v->mlen;
 }
 
-STRING_ST* v_get_str(VECTOR_ST *v, size_t index)
+STRING_ST* v_get_str(VECTOR_ST *v, uint32_t index)
 {
   if (!v)
     return NULL;
@@ -489,7 +512,7 @@ STRING_ST* v_get_str(VECTOR_ST *v, size_t index)
   return v->strs[index];
 }
 
-const char* v_get_str_l(VECTOR_ST* v, size_t index)
+const char* v_get_str_l(VECTOR_ST* v, uint32_t index)
 {
   if (!v)
     return NULL;
@@ -512,7 +535,7 @@ STRING_ST* new_str(const char *s)
   return str;
 }
 
-STRING_ST* new_str_s(const char *s, size_t str_len)
+STRING_ST* new_str_s(const char *s, uint32_t str_len)
 {
   STRING_ST *str = new_empty_str_s(str_len + 1);
   if (!str)
@@ -532,7 +555,7 @@ STRING_ST* new_empty_str()
   return str;
 }
 
-STRING_ST* new_empty_str_s(size_t sz)
+STRING_ST* new_empty_str_s(uint32_t sz)
 {
   STRING_ST *str;
   str = calloc(1, sizeof(STRING_ST));
@@ -547,6 +570,8 @@ STRING_ST* new_empty_str_s(size_t sz)
 
   str->len = 0;
   str->mlen = sz;
+  str->cmp = NULL;
+  str->kmp = NULL;
 
   return str;
 }
@@ -558,8 +583,8 @@ STRING_ST* s_append_c(STRING_ST *dst, char ch)
   if (!dst->l)
     return NULL;
 
-  size_t len = dst->len;
-  size_t mlen = dst->mlen;
+  uint32_t len = dst->len;
+  uint32_t mlen = dst->mlen;
 
   /* string is full */
   if (len == (mlen - 1)) {
@@ -589,13 +614,13 @@ STRING_ST* s_append_l(STRING_ST *dst, const char *src)
   if (!dst->l)
     return NULL;
 
-  size_t len = dst->len;
-  size_t mlen = dst->mlen;
+  uint32_t len = dst->len;
+  uint32_t mlen = dst->mlen;
 
-  size_t n = 0;
+  uint32_t n = 0;
   while (src[n] != '\0')
     n++;
-  size_t olen = len;
+  uint32_t olen = len;
   len += n;
 
   /* new string exceeds current memory */
@@ -610,7 +635,7 @@ STRING_ST* s_append_l(STRING_ST *dst, const char *src)
     dst->l = tmp;
   }
 
-  size_t i;
+  uint32_t i;
   for (i = 0; i < n; i++) {
     dst->l[i + olen] = src[i];
   }
@@ -628,7 +653,7 @@ STRING_ST* s_concat(int n, ...)
   va_start(ap, n);
   va_copy(aq, ap);
 
-  size_t total_len = 0;
+  uint32_t total_len = 0;
   for (int i = 0; i < n; i++) {
     STRING_ST *tmp = va_arg(ap, STRING_ST*);
     if (!tmp)
@@ -652,8 +677,8 @@ STRING_ST* s_concat(int n, ...)
 
 STRING_ST* s_copy(STRING_ST *src)
 {
-  size_t len = src->len;
-  size_t mlen = src->mlen;
+  uint32_t len = src->len;
+  uint32_t mlen = src->mlen;
 
   STRING_ST *dst;
   dst = new_empty_str_s(mlen);
@@ -667,11 +692,150 @@ STRING_ST* s_copy(STRING_ST *src)
   return dst;
 }
 
+uint32_t get_case_match(STRING_ST* s, STRING_ST* cmp)
+{
+  uint32_t match;
+  match = get_match(s, cmp, false);
+
+  return match;
+}
+
+uint32_t get_icase_match(STRING_ST* s, STRING_ST* cmp)
+{
+  uint32_t match;
+  match = get_match(s, cmp, true);
+
+  return match;
+}
+
+uint32_t get_match(STRING_ST* s, STRING_ST* word, bool ignorecase)
+{
+  STRING_ST *prev_word = s->cmp;
+  struct kmp_t *prev_result = s->kmp;
+  struct kmp_t *result;
+  uint32_t match;
+  uint32_t method = ignorecase;
+
+  if (word == prev_word && s->kmp->method == method){
+    result = s->kmp;
+  } else {
+    if (s-> kmp != NULL){
+      free(s->kmp->match_arry);
+      free(s->kmp);
+    }
+    result = kmp_search(s, word, ignorecase);
+  }
+
+  match = result->match_arry[result->token];
+  result->token += 1;
+
+  if (match == (uint32_t)(-1)) {
+    free(s->kmp->match_arry);
+    free(s->kmp);
+    s->cmp = NULL;
+    s->kmp = NULL;
+  } else {
+    s->cmp = word;
+    s->kmp = result;
+  }
+
+  return match;
+}
+
+struct kmp_t* kmp_search(STRING_ST* s, STRING_ST* w, bool ignorecase)
+{
+  const char *a = s->l;
+  const char *b = w->l;
+
+  struct kmp_t *P_t;
+  int P[256];
+  int nP = 0;
+
+  int j = 0;
+  int k = 0;
+
+  /* KMP table */
+  int T[s->len + 1];
+  int pos = 1;
+  int cnd = 0;
+
+  T[0] = -1;
+
+  while (pos < s->len + 1) {
+    char cpos, ccnd;
+    if (ignorecase) {
+      cpos = tolower(a[pos]);
+      ccnd = tolower(a[cnd]);
+    }
+    else {
+      cpos = a[pos];
+      ccnd = a[cnd];
+    }
+
+    if (cpos == ccnd) {
+      T[pos] =  T[cnd];
+    } else {
+      T[pos] = cnd;
+      while (cnd >= 0 && cpos != ccnd)
+        cnd = T[cnd];
+    }
+    pos += 1;
+    cnd += 1;
+  }
+
+  /* Main KMP search algorithm */
+  while (j < s->len) {
+    char ca, cb;
+    if (ignorecase) {
+      ca = tolower(a[j]);
+      cb = tolower(b[k]);
+    } else {
+      ca = a[j];
+      cb = b[k];
+    }
+
+    if (ca == cb) {
+      j += 1;
+      k += 1;
+      if (k == w->len) {
+        P[nP] = j - k;
+        nP += 1;
+        k = T[k + 1];
+      }
+    } else {
+      k = T[k + 1];
+      j += 1;
+    }
+
+    if (k < 0) {
+      k += 1;
+    }
+  }
+
+  P_t = calloc(1, sizeof(struct kmp_t));
+  P_t->match_arry = calloc(nP + 1, sizeof(uint32_t));
+
+  P_t->match_n = nP;
+  for (int i = 0; i < nP; i++)
+    P_t->match_arry[i] = P[i];
+
+  P_t->method = ignorecase;
+
+  P_t->match_arry[nP] = -1;
+
+  return P_t;
+}
+
 int del_str(STRING_ST *str)
 {
   if (!str->l)
     return STRING_FAILURE;
   free(str->l);
+
+  if (str->kmp) {
+    free(str->kmp->match_arry);
+    free(str->kmp);
+  }
 
   if (!str)
     return STRING_FAILURE;
@@ -680,14 +844,14 @@ int del_str(STRING_ST *str)
   return STRING_SUCCESS;
 }
 
-size_t s_get_len(STRING_ST *str)
+uint32_t s_get_len(STRING_ST *str)
 {
   if (!str)
     return STRING_FAILURE;
   return str->len;
 }
 
-size_t s_get_mlen(STRING_ST *str)
+uint32_t s_get_mlen(STRING_ST *str)
 {
   if (!str)
     return STRING_FAILURE;
@@ -712,4 +876,14 @@ static TABLE_ST* check_table(TABLE_ST* t)
     return NULL;
 
   return t;
+}
+
+static VECTOR_ST* check_vector(VECTOR_ST* v)
+{
+  return NULL;
+}
+
+static STRING_ST* check_string(STRING_ST* s)
+{
+  return NULL;
 }

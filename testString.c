@@ -1,7 +1,47 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "string_st.h"
+
+void test_KMP()
+{
+  printf("\n====== TEST KMP ======\n");
+  STRING_ST* s = new_str("ABC ABCDAB ABCDABCDABDE");
+  STRING_ST* w = new_str("ABCDABD");
+
+  uint32_t ret = get_case_match(s, w);
+
+  del_str(s);
+  del_str(w);
+
+  s = new_str("AbABaBabAB");
+  w = new_str("AB");
+
+  ret = get_case_match(s, w);
+  printf("Match no ignore case at index %d\n", ret);
+  ret = get_icase_match(s, w);
+  printf("Match ignore case at index %d\n", ret);
+
+  printf("\n");
+
+  int counter = 0;
+  while ((ret = get_case_match(s, w)) != (uint32_t)(-1)) {
+    printf("Match no ignore case %d: at index %d\n", counter, ret);
+    counter += 1;
+  }
+
+  printf("\n");
+
+  while ((ret = get_icase_match(s, w)) != (uint32_t)(-1)) {
+    printf("Match ignore case %d: at index %d\n", counter, ret);
+    counter += 1;
+  }
+
+  del_str(s);
+  del_str(w);
+  printf("====== END TEST KMP ======\n");
+}
 
 void test_transpose()
 {
@@ -42,7 +82,7 @@ void test_transpose()
   printf("Vector 1: %s,%s,%s,%s\n", t_get_str_l(t, 0, 0), t_get_str_l(t, 0, 1), t_get_str_l(t, 0, 2), t_get_str_l(t, 0, 3));
   printf("Vector 2: %s,%s,%s\n", t_get_str_l(t, 1, 0), t_get_str_l(t, 1, 1), t_get_str_l(t, 1, 2));
   printf("Vector 3: %s,%s,%s\n", t_get_str_l(t, 2, 0), t_get_str_l(t, 2, 1), t_get_str_l(t, 2, 2));
-  printf("Max Vector: %ld\n", t_get_max_vector_len(t));
+  printf("Max Vector: %u\n", t_get_max_vector_len(t));
 
   t = transpose(t);
   printf("After\n");
@@ -50,7 +90,7 @@ void test_transpose()
   printf("Vector 2: %s,%s,%s\n", t_get_str_l(t, 1, 0), t_get_str_l(t, 1, 1), t_get_str_l(t, 1, 2));
   printf("Vector 3: %s,%s,%s\n", t_get_str_l(t, 2, 0), t_get_str_l(t, 2, 1), t_get_str_l(t, 2, 2));
   printf("Vector 4: %s\n", t_get_str_l(t, 3, 0));
-  printf("Max Vector: %ld\n", t_get_max_vector_len(t));
+  printf("Max Vector: %u\n", t_get_max_vector_len(t));
 
   del_table(t);
   printf("====== END TEST TRANSPOSE ======\n");
@@ -130,10 +170,10 @@ void test_parse_delimiter()
 
   VECTOR_ST *v = parse_delimited_c(s, ';');
 
-  printf("  vector: len: %ld, mlen: %ld\n", v_get_len(v), v_get_mlen(v));
+  printf("  vector: len: %u, mlen: %u\n", v_get_len(v), v_get_mlen(v));
   for (int i = 0; i < v_get_len(v); i++) {
     printf("Field %d: %s\n", i, v_get_str_l(v, i));
-    printf("\tlen: %ld, mlen: %ld\n", s_get_len(v_get_str(v, i)), s_get_mlen(v_get_str(v, i)));
+    printf("\tlen: %u, mlen: %u\n", s_get_len(v_get_str(v, i)), s_get_mlen(v_get_str(v, i)));
   }
 
   del_str(s);
@@ -199,7 +239,7 @@ void test_concat()
   STRING_ST *result = s_concat(4, str1, str2, str3, str4);
 
   printf("Concat result: %s\n", s_get_str_l(result));
-  printf("Str Length: %ld, Str Memory Length: %ld\n", 
+  printf("Str Length: %u, Str Memory Length: %u\n",
       s_get_len(result), s_get_mlen(result));
 
   del_str(str1);
@@ -217,14 +257,14 @@ void test_append_char()
 
   STRING_ST *str = new_str_s("Hello Sweetheart", 20);
 
-  printf("str: %s with length: %ld and memlength: %ld\n", s_get_str_l(str), s_get_len(str), s_get_mlen(str));
+  printf("str: %s with length: %u and memlength: %u\n", s_get_str_l(str), s_get_len(str), s_get_mlen(str));
 
   s_append_c(str, 'X');
   s_append_c(str, 'Y');
   s_append_c(str, 'Z');
   s_append_c(str, '0');
 
-  printf("str: %s with length: %ld and memlength: %ld\n", s_get_str_l(str), s_get_len(str), s_get_mlen(str));
+  printf("str: %s with length: %u and memlength: %u\n", s_get_str_l(str), s_get_len(str), s_get_mlen(str));
 
   del_str(str);
 
@@ -237,7 +277,7 @@ void test_creation_wo_size()
 
   STRING_ST *str = new_str("This is arbitrary string");
   printf("Str: %s\n", s_get_str_l(str));
-  printf("Str Length: %ld, Str Memory Length: %ld\n", 
+  printf("Str Length: %u, Str Memory Length: %u\n",
       s_get_len(str), s_get_mlen(str));
   del_str(str);
 
@@ -248,11 +288,11 @@ void test_creation()
 {
   printf("\n====== TEST CREATION ======\n");
 
-  size_t sz = 5;
+  uint32_t sz = 5;
   STRING_ST *str = new_str_s("Big enough string", sz);
   printf("Big string with small number of size\n");
-  printf("Str: %s, size: %ld\n", s_get_str_l(str), sz);
-  printf("Str Length: %ld, Str Memory Length: %ld\n", 
+  printf("Str: %s, size: %u\n", s_get_str_l(str), sz);
+  printf("Str Length: %u, Str Memory Length: %u\n",
       s_get_len(str), s_get_mlen(str));
   del_str(str);
 
@@ -270,10 +310,10 @@ void test_non_terminated_creation()
   /* This commented line below created memory error */
   /* s[13] = 'A'; */
 
-  size_t sz = 12;
+  uint32_t sz = 12;
   STRING_ST *str = new_str_s(s, sz);
-  printf("Str: %s, size: %ld\n", s_get_str_l(str), sz);
-  printf("Str Length: %ld, Str Memory Length: %ld\n", 
+  printf("Str: %s, size: %d\n", s_get_str_l(str), sz);
+  printf("Str Length: %u, Str Memory Length: %u\n",
       s_get_len(str), s_get_mlen(str));
   del_str(str);
   free(s);
@@ -293,6 +333,7 @@ int main(int argc, char *argv[])
   test_parse_delimiter();
   test_table();
   test_transpose();
+  test_KMP();
 
   return 0;
 }
