@@ -1,3 +1,17 @@
+/* This file is part of csvr.
+ *
+ * csvr is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version
+ * 2 of the License, or (at your option) any later version.
+ *
+ * csvr is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with csvr.
+ * If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #ifndef STRING_ST_H
 #define STRING_ST_H
 
@@ -48,8 +62,10 @@ STRING_ST* new_empty_str();
 STRING_ST* new_empty_str_s(uint32_t sz);
 STRING_ST* s_append_c(STRING_ST *dst, char ch);
 STRING_ST* s_append_l(STRING_ST *dst, const char *src);
+STRING_ST* s_clear(STRING_ST *s);
 STRING_ST* s_concat(int n, ...);
 STRING_ST* s_copy(STRING_ST *s);
+STRING_ST* s_set_char(STRING_ST *dst, uint32_t index, char ch);
 uint32_t get_case_match(STRING_ST* s, STRING_ST* cmp);
 uint32_t get_icase_match(STRING_ST* s, STRING_ST* cmp);
 

@@ -1,3 +1,17 @@
+/* This file is part of csvr.
+ *
+ * csvr is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version
+ * 2 of the License, or (at your option) any later version.
+ *
+ * csvr is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with csvr.
+ * If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -57,7 +71,7 @@ int del_table(TABLE_ST *t);
 uint32_t t_get_len(TABLE_ST *t);
 uint32_t t_get_mlen(TABLE_ST *t);
 uint32_t t_get_max_vector_len(TABLE_ST *t);
-const char* t_get_str_l(TABLE_ST *t, uint32_t i, uint32_t j);
+const char* t_get_str_l(TABLE_ST *t, uint32_t i, uint32_t j); /* TODO: Ambiguous var name i and j */
 STRING_ST* t_get_str(TABLE_ST *t, uint32_t i, uint32_t j);
 VECTOR_ST* t_get_vector(TABLE_ST *t, uint32_t index);
 
@@ -81,8 +95,10 @@ STRING_ST* new_empty_str();
 STRING_ST* new_empty_str_s(uint32_t sz);
 STRING_ST* s_append_c(STRING_ST *dst, char ch);
 STRING_ST* s_append_l(STRING_ST *dst, const char *src);
+STRING_ST* s_clear(STRING_ST *s);
 STRING_ST* s_concat(int n, ...);
 STRING_ST* s_copy(STRING_ST *s);
+STRING_ST* s_set_char(STRING_ST *dst, uint32_t index, char ch);
 uint32_t get_case_match(STRING_ST* s, STRING_ST* cmp);
 uint32_t get_icase_match(STRING_ST* s, STRING_ST* cmp);
 
@@ -647,6 +663,17 @@ STRING_ST* s_append_l(STRING_ST *dst, const char *src)
   return dst;
 }
 
+STRING_ST* s_clear(STRING_ST *s)
+{
+  char *l = s->l;
+  uint32_t mlen = s->mlen;
+
+  memset(l, '\0', mlen);
+  s->len = 0;
+
+  return s;
+}
+
 STRING_ST* s_concat(int n, ...)
 {
   va_list ap, aq;
@@ -692,6 +719,22 @@ STRING_ST* s_copy(STRING_ST *src)
   return dst;
 }
 
+STRING_ST* s_set_char(STRING_ST *dst, uint32_t index, char ch)
+{
+  char *l = dst->l;
+  uint32_t len = dst->len;
+
+  if (index >= 0 && index < len) {
+    l[index] = ch;
+    if (ch == '\0') {
+      len = index;
+      dst->len = len;
+    }
+  }
+
+  return dst;
+}
+
 uint32_t get_case_match(STRING_ST* s, STRING_ST* cmp)
 {
   uint32_t match;
@@ -719,7 +762,7 @@ uint32_t get_match(STRING_ST* s, STRING_ST* word, bool ignorecase)
   if (word == prev_word && s->kmp->method == method){
     result = s->kmp;
   } else {
-    if (s-> kmp != NULL){
+    if (s->kmp != NULL){
       free(s->kmp->match_arry);
       free(s->kmp);
     }
@@ -730,8 +773,8 @@ uint32_t get_match(STRING_ST* s, STRING_ST* word, bool ignorecase)
   result->token += 1;
 
   if (match == (uint32_t)(-1)) {
-    free(s->kmp->match_arry);
-    free(s->kmp);
+    free(result->match_arry);
+    free(result);
     s->cmp = NULL;
     s->kmp = NULL;
   } else {
