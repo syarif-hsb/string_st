@@ -114,9 +114,9 @@ void test_table()
 {
   printf("\n====== TEST TABLE ======\n");
   VECTOR_ST *v1 = new_vector();
-  STRING_ST *str1 = new_str("Hai Mega");
-  STRING_ST *str2 = new_str("Hai Semua");
-  STRING_ST *str3 = new_str("Hello, World!");
+  STRING_ST *str1 = new_str("Test1");
+  STRING_ST *str2 = new_str("Test2");
+  STRING_ST *str3 = new_str("Test3");
   v_append(v1, s_copy(str1));
   v_append(v1, s_copy(str2));
   v_append(v1, s_copy(str3));
@@ -128,9 +128,9 @@ void test_table()
   }
 
   VECTOR_ST *v2 = new_vector();
-  STRING_ST *str4 = new_str("Hai Kamu");
-  STRING_ST *str5 = new_str("Hai Ho");
-  STRING_ST *str6 = new_str("Hello, Space!");
+  STRING_ST *str4 = new_str("Test4");
+  STRING_ST *str5 = new_str("Test5");
+  STRING_ST *str6 = new_str("Test6");
   v_append(v2, s_copy(str4));
   v_append(v2, s_copy(str5));
   v_append(v2, s_copy(str6));
